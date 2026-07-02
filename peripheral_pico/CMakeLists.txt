@@ -59,7 +59,7 @@ target_include_directories(peripheral_pico PRIVATE
 target_link_libraries(peripheral_pico 
         hardware_i2c
         hardware_dma
-        
+        hardware_pwm
         )
 
 pico_add_extra_outputs(peripheral_pico)
