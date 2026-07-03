@@ -3,51 +3,67 @@
 #include "hardware/gpio.h"
 #include "hardware/pwm.h"
 
+#include "tusb.h"
+
 #include <math.h>
 #include "motor.h"
+#include "led.h"
 #include "pins.h"
+
+// uint8_t motor_input_buffer[8] = {0};
+float motor_input_buffer[2] = {0};
+
+    //LED init
+    LED lf;
+    LED lb;
+    LED rf;
+    LED rb;
+
+    //Motor Init
+    Motor m_lf;
+    Motor m_lb;
+    Motor m_rf;
+    Motor m_rb;
 
 int main() {
     stdio_init_all();
+    tusb_init();
 
     //pin initialization
     if (cyw43_arch_init()) {
         return -1; // failed to init WiFi chip
     }
 
-    // gpio_init(LED_LF);
-    // gpio_set_dir(LED_LF, GPIO_OUT);
+    initLED(&lf, LED_LF);
+    initLED(&lb, LED_LB);
+    initLED(&rf, LED_RF);
+    initLED(&rb, LED_RB);
 
-    gpio_set_function(LED_LF, GPIO_FUNC_PWM);
-    int amplitude = 200;
-    int base = 200;
-    int wrap = 999;
-    float f = 0.1;
+    initMotor(&m_lf, LFen, LFin1, LFin2);
+    initMotor(&m_lb, LBen, LBin1, LBin2);
+    initMotor(&m_rf, RFen, RFin1, RFin2);
+    initMotor(&m_rb, RBen, RBin1, RBin2);
 
-    uint slice = pwm_gpio_to_slice_num(LED_LF);
-    pwm_set_clkdiv(slice, 125.0f);
-    pwm_set_wrap(slice, wrap);
-    // pwm_set_gpio_level(slice, 250);
-    // pwm_set_chan_level(slice, PWM_CHAN_A, 250);
-    // Set initial B output high for three cycles before dropping
-    // pwm_set_chan_level(slice, PWM_CHAN_B, 500);
-    pwm_set_enabled(slice, true);
-    
-    int c = 0;
+
 
     while (true) {
-        // printf("HELLO\r\n");
-        int level = amplitude * sinf(c * f) + base;
-        pwm_set_chan_level(slice, PWM_CHAN_A, level);
-        c++;
-        sleep_ms(50);
+        tud_task();
 
-        // cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1);
-        // // gpio_put(LED_LF, 1);
-        // sleep_ms(1000);
-
-        // cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0);
-        // // gpio_put(LED_LF, 0);
-        // sleep_ms(500);
+        //apply changes to motor inputs
+        float left = motor_input_buffer[0];
+        float right = motor_input_buffer[1];
+        setMotor(&m_lf, left);
+        setMotor(&m_lb, left);
+        setMotor(&m_rf, right);
+        setMotor(&m_rb, right);
     }
 }
+
+// get usb msgs
+void tud_cdc_rx_cb(uint8_t itf)
+{
+    uint32_t total = tud_cdc_available();
+    // total should be 2f = 8bytes
+    tud_cdc_read(motor_input_buffer, total);
+}
+
