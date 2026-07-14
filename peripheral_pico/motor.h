@@ -53,7 +53,7 @@ void setMotor(Motor * motor, float value){
         gpio_put(motor->in2, 0);
     } else {
         gpio_put(motor->in1, 0);
-        gpio_put(motor->in1, 1);
+        gpio_put(motor->in2, 1);
     }
 
     pwm_set_chan_level(motor->slice, motor->channel, level);
